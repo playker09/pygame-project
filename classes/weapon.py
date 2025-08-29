@@ -46,15 +46,15 @@ class Weapon:
         dx, dy = dx / length, dy / length
 
         if self.mode == "single" or self.mode == "auto":
-            self._spawn_bullet(px, py, dx, dy, bullets)
+            self.spawn_bullet(px, py, dx, dy, bullets)
 
         elif self.mode == "burst":
             for _ in range(self.burst_count):
-                self._spawn_bullet(px, py, dx, dy, bullets)
+                self.spawn_bullet(px, py, dx, dy, bullets)
 
         elif self.mode == "shotgun":
             for _ in range(self.pellet_count):
-                self._spawn_bullet(px, py, dx, dy, bullets)
+                self.spawn_bullet(px, py, dx, dy, bullets)
 
     def reload(self, current_time):
         if self.is_reloading:
@@ -65,34 +65,22 @@ class Weapon:
         self.is_reloading = True
         self.reload_start_time = current_time
 
-
     def update(self, current_time):
         # 장전 중이면 장전 시간 체크
         if self.is_reloading and current_time - self.reload_start_time >= self.reload_time:
-        if current_time - self.reload_start_time >= self.reload_time:
-            needed = self.magazine_size - self.ammo_in_mag
+            needed = self.mag_size - self.ammo_in_mag
             to_load = min(needed, self.reserve_ammo)
 
             self.ammo_in_mag += to_load
             self.reserve_ammo -= to_load
             self.is_reloading = False
 
-    def update(self, current_time):
-        # 장전 중이면 장전 시간 체크
-        if self.is_reloading and current_time - self.reload_start_time >= self.reload_time:
-            needed = self.magazine_size - self.ammo_in_mag
-            to_load = min(needed, self.reserve_ammo)
-
-            self.ammo_in_mag += to_load
-            self.reserve_ammo -= to_load
-            self.is_reloading = False
-
-    def _spawn_bullet(self, px, py, dx, dy, bullets):
+    def spawn_bullet(self, px, py, dx, dy, bullets):
         spread_angle = math.radians(random.uniform(-self.spread, self.spread))
         cos_a, sin_a = math.cos(spread_angle), math.sin(spread_angle)
         sdx = dx * cos_a - dy * sin_a
         sdy = dx * sin_a + dy * cos_a
 
         bullets.append(Bullet(px, py, sdx, sdy))
-```
+
 

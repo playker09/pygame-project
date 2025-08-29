@@ -16,7 +16,6 @@ class Player:
         }
         self.current_weapon = self.weapons["pistol"]
 
-
         self.x = MAP_WIDTH // 2
         self.y = MAP_HEIGHT // 2
         self.speed = 5
@@ -71,7 +70,12 @@ class Player:
         px, py = self.rect.center
         self.current_weapon.shoot(px, py, mx, my, camera, bullets, current_time)
 
-    
     def switch_weapon(self, name):
         if name in self.weapons:
             self.current_weapon = self.weapons[name]
+    
+    def reload(self, current_time):
+        self.current_weapon.reload(current_time)
+    
+    def update_weapon(self, current_time):
+        self.current_weapon.update(current_time)

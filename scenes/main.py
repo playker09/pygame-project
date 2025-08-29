@@ -13,6 +13,8 @@ from classes.entity import Enemy, Wall, ExpOrb
 from classes.camera import Camera
 from scenes.map import draw_grid, MAP_WIDTH, MAP_HEIGHT
 from scenes.game_over import game_over_screen
+from hud import draw_level, draw_ammo
+
 
 
 
@@ -50,6 +52,7 @@ def main():
     PLAYER_COLOR = (0, 200, 255)  # 플레이어 색상 초기화
 
     player = Player()  # Player 객체 생성
+      # 현재 무기
     bullets = []
     enemies = []
     walls = []
@@ -101,9 +104,12 @@ def main():
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     shooting = False
+            
         if shooting:
             mx, my = pygame.mouse.get_pos()
             player.shoot(mx, my, camera, bullets, current_time)
+        
+        player.update_weapon(current_time)
             
         # 플레이어 이동
         keys = pygame.key.get_pressed()
@@ -196,14 +202,11 @@ def main():
 
         # 플레이어 HP 바 및 레벨 표시
         player.draw_hp_bar(WIN, camera)
-        player.draw_level(WIN)
-        # font = pygame.font.SysFont(None, 36)
 
-        # HUD 업데이트 부분
-        # ammo_text = f"{weapon.ammo_in_mag}/{weapon.mag_size} | {weapon.reserve_ammo}"
-        # text_surface = font.render(ammo_text, True, (255, 255, 255))
-        # WIN.blit(text_surface, (20, 20))
+        font = pygame.font.SysFont(None, 36)
 
+        draw_level(WIN, font, player)
+        draw_ammo(WIN, font, player)
 
         pygame.display.update()
 
