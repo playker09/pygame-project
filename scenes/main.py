@@ -113,7 +113,23 @@ def main():
             
         # 플레이어 이동
         keys = pygame.key.get_pressed()
+        dash_dir = [0, 0]
+
+        # 이동 방향 벡터 생성
+        if keys[pygame.K_w]: dash_dir[1] -= 1
+        if keys[pygame.K_s]: dash_dir[1] += 1
+        if keys[pygame.K_a]: dash_dir[0] -= 1
+        if keys[pygame.K_d]: dash_dir[0] += 1
+
+        # 대쉬 시작 (방향이 있을 때만)
+        if dash_dir != [0, 0] and keys[pygame.K_LSHIFT]:
+            player.dash(tuple(dash_dir), current_time)
+
+        # 이동 처리
         player.move(keys)
+
+        # 🔥 플레이어 상태 업데이트 (대쉬, 무적, 무기)
+        player.update(current_time)
 
         # 카메라 업데이트
         camera.update(player)

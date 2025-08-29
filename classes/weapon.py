@@ -21,13 +21,16 @@ class Weapon:
         self.reload_start_time = 0
 
     def shoot(self, px, py, mx, my, camera, bullets, current_time):
-        # 장전 중이면 발사 불가
-        if self.is_reloading:
-            return
-
         # 탄창 비었으면 발사 불가
         if self.ammo_in_mag <= 0:
+            if not self.is_reloading:
+                self.reload(current_time)
             return
+        
+        # 장전 중이면 장전 중단
+        if self.is_reloading:
+            self.is_reloading = False
+            self.reload_start_time = 0
 
         if current_time - self.last_shot < self.fire_rate:
             return
