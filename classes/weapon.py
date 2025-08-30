@@ -84,6 +84,6 @@ class Weapon:
         sdx = dx * cos_a - dy * sin_a
         sdy = dx * sin_a + dy * cos_a
 
-        bullets.append(Bullet(px, py, sdx, sdy))
+        bullets.add(Bullet(px, py, sdx, sdy))
 
 

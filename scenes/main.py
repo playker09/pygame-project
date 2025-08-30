@@ -2,7 +2,6 @@ import sys
 import os
 import pygame
 import math
-import time
 import random
 
 # 프로젝트 루트 경로 추가
@@ -13,10 +12,7 @@ from classes.entity import Enemy, Wall, ExpOrb
 from classes.camera import Camera
 from scenes.map import draw_grid, MAP_WIDTH, MAP_HEIGHT
 from scenes.game_over import game_over_screen
-from hud import draw_level, draw_ammo
-
-
-
+from hud import draw_level, draw_ammo, draw_dash_indicator
 
 # 초기화
 pygame.init()
@@ -24,19 +20,13 @@ WIDTH, HEIGHT = 800, 600
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("슈팅게임 프로토타입")
 
-# 색상
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-PLAYER_COLOR = (0, 200, 255)
-BULLET_COLOR = (255, 255, 0)
-ENEMY_COLOR = (255, 50, 50)
-WALL_COLOR = (100, 100, 100)
-
-# 객체 크기
-PLAYER_SIZE = 40
-BULLET_SIZE = 8
-ENEMY_SIZE = 30
-WALL_SIZE = 40
+# 모든 스프라이트 그룹
+all_sprites = pygame.sprite.Group()
+enemies = pygame.sprite.Group()
+bullets = pygame.sprite.Group()
+walls = pygame.sprite.Group()
+exp_orbs = pygame.sprite.Group()
+towers = pygame.sprite.Group()
 
 # FPS
 clock = pygame.time.Clock()
@@ -44,19 +34,15 @@ FPS = 60
 
 
 def main():
-    global PLAYER_COLOR  # PLAYER_COLOR를 전역 변수로 선언
-    global WHITE
-    global WALL_COLOR
-    global WALL_SIZE
+    # PLAYER_COLOR = (0, 200, 255)  # 플레이어 색상 초기화
+    player = Player()
+    all_sprites = pygame.sprite.Group()
+    all_sprites.add(player)
 
-    PLAYER_COLOR = (0, 200, 255)  # 플레이어 색상 초기화
-
-    player = Player()  # Player 객체 생성
-      # 현재 무기
-    bullets = []
-    enemies = []
-    walls = []
-    exp_orbs = []  # 경험치 오브 리스트
+    bullets = pygame.sprite.Group()
+    enemies = pygame.sprite.Group()
+    walls = pygame.sprite.Group()
+    exp_orbs = pygame.sprite.Group()
     spawn_timer = 0
     camera = Camera(WIDTH, HEIGHT)  # 카메라 초기화
     last_hit_time = 0  # 마지막으로 플레이어가 적에게 맞은 시간
@@ -90,7 +76,7 @@ def main():
 
                 # 울타리 설치
                 if event.key == pygame.K_SPACE:
-                    walls.append(Wall(player.rect.centerx, player.rect.top - WALL_SIZE))
+                    walls.add(Wall(player.rect.centerx, player.rect.top - WALL_SIZE))
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -108,6 +94,7 @@ def main():
         if shooting:
             mx, my = pygame.mouse.get_pos()
             player.shoot(mx, my, camera, bullets, current_time)
+        bullets.update()
         
         player.update_weapon(current_time)
             
@@ -134,95 +121,99 @@ def main():
         # 카메라 업데이트
         camera.update(player)
 
-        # 적 스폰
         spawn_timer += 1
-        if spawn_timer > 60:  # 1초마다 적 스폰
-            while True:
-                spawn_x = random.randint(0, MAP_WIDTH - ENEMY_SIZE)
-                spawn_y = random.randint(0, MAP_HEIGHT - ENEMY_SIZE)
-                new_enemy = Enemy(spawn_x, spawn_y)
-                # 기존 적들과 겹치지 않는 위치에 생성
-                if not any(enemy.rect.colliderect(new_enemy.rect) for enemy in enemies):
-                    enemies.append(new_enemy)
-                    break
+        if spawn_timer > 60:  # 1초마다 스폰 체크
+            # 난이도 스케일
+            elapsed_sec = current_time // 1000
+            level_scale = 1 + elapsed_sec // 30  # 30초마다 강해짐
+
+            if len(enemies) < 300 + level_scale * 3:  # 적 최대 수 제한
+                num_to_spawn = 10 + level_scale  # 스폰할 적 수
+                for _ in range(num_to_spawn):
+                    while True:
+                        # 플레이어 주변 랜덤 위치 스폰
+                        margin = 400       # 플레이어 주변 최소 거리
+                        spawn_radius = 1200  # 최대 거리
+                        angle = random.uniform(0, 2*math.pi)
+                        distance = random.randint(margin, spawn_radius)
+                        spawn_x = int(player.rect.centerx + math.cos(angle) * distance)
+                        spawn_y = int(player.rect.centery + math.sin(angle) * distance)
+
+                        # 맵 범위 안으로 제한
+                        spawn_x = max(0, min(MAP_WIDTH - ENEMY_SIZE, spawn_x))
+                        spawn_y = max(0, min(MAP_HEIGHT - ENEMY_SIZE, spawn_y))
+
+                        new_enemy = Enemy(spawn_x, spawn_y, size=ENEMY_SIZE, speed=2 , max_hp=3 + level_scale)
+
+                        if not pygame.sprite.spritecollideany(new_enemy, enemies):
+                            enemies.add(new_enemy)
+                            all_sprites.add(new_enemy)
+                            break
+
             spawn_timer = 0
 
+
         # 총알 이동 및 제거
-        for bullet in bullets[:]:
-            bullet.move()
-            if (bullet.rect.x < 0 or bullet.rect.x > MAP_WIDTH or
-                bullet.rect.y < 0 or bullet.rect.y > MAP_HEIGHT):
-                bullets.remove(bullet)
+        for bullet in bullets.copy():
+            hit_enemies = pygame.sprite.spritecollide(bullet, enemies, False)
+            for enemy in hit_enemies:
+                enemy.hp -= bullet.damage
+                bullet.kill()
+                if enemy.hp <= 0:
+                    exp_orb = ExpOrb(enemy.rect.centerx, enemy.rect.centery)
+                    exp_orbs.add(exp_orb)
+                    all_sprites.add(exp_orb)
+                    enemy.kill()
+        
+        hit_enemies = pygame.sprite.spritecollide(player, enemies, False)
+        if hit_enemies and current_time - last_hit_time > 1000:
+            player.hp -= 10
+            last_hit_time = current_time
+            if player.hp <= 0:
+                action = game_over_screen(WIN, player.level, WIDTH, HEIGHT)
+                if action == "retry":
+                    main()
+                else:
+                    pygame.quit()
+                    sys.exit()
 
-        # 적 이동
-        for enemy in enemies[:]:
-            enemy.move(player.rect, enemies)  # 다른 적들과의 충돌 정보 전달
+        # # 적 이동
+        for enemy in enemies:
+            enemy.move(player.rect, enemies)
 
-            # 총알 피격 처리
-            for bullet in bullets[:]:
-                if enemy.rect.colliderect(bullet.rect):
-                    enemy.hp -= bullet.damage
-                    bullets.remove(bullet)
-                    
-            if enemy.hp <= 0:
-                    exp_orbs.append(ExpOrb(enemy.rect.centerx, enemy.rect.centery))  # 경험치 오브 생성
-                    enemies.remove(enemy)
+        #     # 울타리에 부딪히면 제거
+        #     for wall in walls[:]:
+        #         if enemy.rect.colliderect(wall.rect):
+        #             enemies.remove(enemy)
+        #             walls.remove(wall)
+        #             break
 
-            # 울타리에 부딪히면 제거
-            for wall in walls[:]:
-                if enemy.rect.colliderect(wall.rect):
-                    enemies.remove(enemy)
-                    walls.remove(wall)
-                    break
-
-            # 플레이어와 적 충돌 시 HP 감소 (딜레이 적용)
-            if player.rect.colliderect(enemy.rect):
-                if current_time - last_hit_time > 1000:  # 1초 딜레이
-                    player.hp -= 10  # 체력 감소
-                    PLAYER_COLOR = (255, 0, 0) # 맞았을 때 색상 변경
-                    last_hit_time = current_time  # 마지막으로 맞은 시간 갱신
-
-                    if player.hp <= 0:
-                        # 게임 오버 화면 호출
-                        action = game_over_screen(WIN, player.level, WIDTH, HEIGHT)
-                        if action == "retry":
-                            main()  # 게임 다시 시작
-                        elif action == "quit":
-                            pygame.quit()
-                            sys.exit()
-            else:
+            # else:
                 # 색상 복구 로직 (적과 충돌하지 않을 때)
-                if current_time - last_hit_time > 100:  # 0.2초 동안 색상 유지
-                    PLAYER_COLOR = (0, 200, 255)  # 원래 색상으로 복구
-
+                # if current_time - last_hit_time > 100:  # 0.2초 동안 색상 유지
+                #     PLAYER_COLOR = (0, 200, 255)  # 원래 색상으로 복구
 
         # 경험치 오브 흡수
-        for orb in exp_orbs[:]:
+        for orb in exp_orbs.copy():
             if player.rect.colliderect(orb.rect):
                 player.gain_exp(5)  # 경험치 획득
-                exp_orbs.remove(orb)
+                orb.kill()
 
         # 격자 그리기
         draw_grid(WIN, camera)
+        for sprite in all_sprites:
+            sprite.draw(WIN, camera)
 
         # 그리기
         for bullet in bullets:
             bullet.draw(WIN, camera)  # 회전된 총알 그리기
-        for enemy in enemies:
-            enemy.draw(WIN, camera)
-        for wall in walls:
-            wall.draw(WIN)  # WIN을 매개변수로 전달
-        for orb in exp_orbs:
-            orb.draw(WIN, camera)  # 경험치 오브 그리기
-        player.draw(WIN, camera)
 
-        # 플레이어 HP 바 및 레벨 표시
+        # 플레이어 HP 바 및 HUD
         player.draw_hp_bar(WIN, camera)
-
         font = pygame.font.SysFont(None, 36)
-
         draw_level(WIN, font, player)
         draw_ammo(WIN, font, player)
+        draw_dash_indicator(WIN, font, player)
 
         pygame.display.update()
 

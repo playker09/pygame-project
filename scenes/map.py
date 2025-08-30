@@ -1,7 +1,7 @@
 import pygame
 
 # 맵 크기
-MAP_WIDTH, MAP_HEIGHT = 1600, 1200  # 창 크기보다 큰 맵
+MAP_WIDTH, MAP_HEIGHT = 8000, 6000  # 창 크기보다 큰 맵
 
 # 격자 그리기 함수
 def draw_grid(surface,camera):
