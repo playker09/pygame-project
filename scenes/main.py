@@ -8,7 +8,7 @@ import random
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from classes.player import Player
-from classes.entity import Enemy, Wall, ExpOrb
+from classes.entity import spawn_enemies, EMP_Tower, ExpOrb, Wall
 from classes.camera import Camera
 from scenes.map import draw_grid, MAP_WIDTH, MAP_HEIGHT
 from scenes.game_over import game_over_screen
@@ -20,37 +20,32 @@ WIDTH, HEIGHT = 800, 600
 WIN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("슈팅게임 프로토타입")
 
-# 모든 스프라이트 그룹
-all_sprites = pygame.sprite.Group()
-enemies = pygame.sprite.Group()
-bullets = pygame.sprite.Group()
-walls = pygame.sprite.Group()
-exp_orbs = pygame.sprite.Group()
-towers = pygame.sprite.Group()
-
 # FPS
 clock = pygame.time.Clock()
 FPS = 60
 
-
 def main():
-    # PLAYER_COLOR = (0, 200, 255)  # 플레이어 색상 초기화
+    # 모든 스프라이트 그룹
     player = Player()
     all_sprites = pygame.sprite.Group()
-    all_sprites.add(player)
-
-    bullets = pygame.sprite.Group()
     enemies = pygame.sprite.Group()
+    bullets = pygame.sprite.Group()
     walls = pygame.sprite.Group()
     exp_orbs = pygame.sprite.Group()
-    spawn_timer = 0
+    towers = pygame.sprite.Group(
+        EMP_Tower(2000, 1500),
+    )
+    all_sprites.add(towers)
+    all_sprites.add(player)
+
+    spawn_timer = 300        
     camera = Camera(WIDTH, HEIGHT)  # 카메라 초기화
     last_hit_time = 0  # 마지막으로 플레이어가 적에게 맞은 시간
     shooting = False
 
     while True:
-        clock.tick(FPS)
-        WIN.fill(BLACK)
+        dt = clock.tick(FPS) / 1000.0
+        WIN.fill((0,0,0))
 
         current_time = pygame.time.get_ticks()
 
@@ -60,7 +55,7 @@ def main():
                 pygame.quit()
                 sys.exit()
 
-            # 총알 발사
+            # 무기 교체
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1:
                     player.switch_weapon("pistol")
@@ -74,9 +69,9 @@ def main():
                 if event.key == pygame.K_r:
                     player.reload(current_time)
 
-                # 울타리 설치
-                if event.key == pygame.K_SPACE:
-                    walls.add(Wall(player.rect.centerx, player.rect.top - WALL_SIZE))
+                # # 울타리 설치
+                # if event.key == pygame.K_SPACE:
+                #     walls.add(Wall(player.rect.centerx, player.rect.top - WALL_SIZE))
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
@@ -115,43 +110,17 @@ def main():
         # 이동 처리
         player.move(keys)
 
-        # 🔥 플레이어 상태 업데이트 (대쉬, 무적, 무기)
+        # 플레이어 상태 업데이트 (대쉬, 무적, 무기)
         player.update(current_time)
 
         # 카메라 업데이트
         camera.update(player)
 
-        spawn_timer += 1
-        if spawn_timer > 60:  # 1초마다 스폰 체크
-            # 난이도 스케일
-            elapsed_sec = current_time // 1000
-            level_scale = 1 + elapsed_sec // 30  # 30초마다 강해짐
-
-            if len(enemies) < 300 + level_scale * 3:  # 적 최대 수 제한
-                num_to_spawn = 10 + level_scale  # 스폰할 적 수
-                for _ in range(num_to_spawn):
-                    while True:
-                        # 플레이어 주변 랜덤 위치 스폰
-                        margin = 400       # 플레이어 주변 최소 거리
-                        spawn_radius = 1200  # 최대 거리
-                        angle = random.uniform(0, 2*math.pi)
-                        distance = random.randint(margin, spawn_radius)
-                        spawn_x = int(player.rect.centerx + math.cos(angle) * distance)
-                        spawn_y = int(player.rect.centery + math.sin(angle) * distance)
-
-                        # 맵 범위 안으로 제한
-                        spawn_x = max(0, min(MAP_WIDTH - ENEMY_SIZE, spawn_x))
-                        spawn_y = max(0, min(MAP_HEIGHT - ENEMY_SIZE, spawn_y))
-
-                        new_enemy = Enemy(spawn_x, spawn_y, size=ENEMY_SIZE, speed=2 , max_hp=3 + level_scale)
-
-                        if not pygame.sprite.spritecollideany(new_enemy, enemies):
-                            enemies.add(new_enemy)
-                            all_sprites.add(new_enemy)
-                            break
-
-            spawn_timer = 0
-
+       # EMP 타워 업데이트
+        for tower in towers:
+            tower.update(dt, player, enemies, all_sprites, exp_orbs, current_time)
+            
+        spawn_timer = spawn_enemies(player, enemies, all_sprites, spawn_timer, current_time)
 
         # 총알 이동 및 제거
         for bullet in bullets.copy():
@@ -160,7 +129,7 @@ def main():
                 enemy.hp -= bullet.damage
                 bullet.kill()
                 if enemy.hp <= 0:
-                    exp_orb = ExpOrb(enemy.rect.centerx, enemy.rect.centery)
+                    exp_orb = ExpOrb(enemy.rect.centerx, enemy.rect.centery, random.randint(1, 7))
                     exp_orbs.add(exp_orb)
                     all_sprites.add(exp_orb)
                     enemy.kill()
@@ -201,8 +170,12 @@ def main():
 
         # 격자 그리기
         draw_grid(WIN, camera)
+
         for sprite in all_sprites:
-            sprite.draw(WIN, camera)
+            if hasattr(sprite, "draw"):  # EMP_Tower, Player 등은 draw 있음
+                sprite.draw(WIN, camera)
+            else:  # 일반 Enemy 같은 경우는 그냥 이미지 블릿
+                WIN.blit(sprite.image, camera.apply(sprite))
 
         # 그리기
         for bullet in bullets:
@@ -218,4 +191,4 @@ def main():
         pygame.display.update()
 
 if __name__ == "__main__":
-    main()
+    main()  

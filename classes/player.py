@@ -8,12 +8,12 @@ class Player(pygame.sprite.Sprite):
         super().__init__()
         # 이미지 및 위치
         self.original_image = pygame.image.load("image//player.png").convert_alpha()
-        self.original_image = pygame.transform.scale(self.original_image, (40, 40))
+        self.original_image = pygame.transform.scale(self.original_image, (34.5, 66))
         self.image = self.original_image.copy()
         self.rect = self.image.get_rect(center=(MAP_WIDTH / 2, MAP_HEIGHT / 2))
 
         # 이동
-        self.speed = 4
+        self.speed = 3.5
 
         # 체력
         self.max_hp = 100
