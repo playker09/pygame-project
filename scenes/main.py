@@ -129,7 +129,7 @@ def main():
                 enemy.hp -= bullet.damage
                 bullet.kill()
                 if enemy.hp <= 0:
-                    exp_orb = ExpOrb(enemy.rect.centerx, enemy.rect.centery, random.randint(1, 7))
+                    exp_orb = ExpOrb(enemy.rect.centerx, enemy.rect.centery, random.randint(4, 7))
                     exp_orbs.add(exp_orb)
                     all_sprites.add(exp_orb)
                     enemy.kill()
@@ -146,16 +146,9 @@ def main():
                     pygame.quit()
                     sys.exit()
 
-        # # 적 이동
+        # 적 이동
         for enemy in enemies:
             enemy.move(player.rect, enemies)
-
-        #     # 울타리에 부딪히면 제거
-        #     for wall in walls[:]:
-        #         if enemy.rect.colliderect(wall.rect):
-        #             enemies.remove(enemy)
-        #             walls.remove(wall)
-        #             break
 
             # else:
                 # 색상 복구 로직 (적과 충돌하지 않을 때)
@@ -165,7 +158,7 @@ def main():
         # 경험치 오브 흡수
         for orb in exp_orbs.copy():
             if player.rect.colliderect(orb.rect):
-                player.gain_exp(5)  # 경험치 획득
+                player.gain_exp(orb.value)  # 경험치 획득
                 orb.kill()
 
         # 격자 그리기

@@ -12,7 +12,7 @@ WALL_SIZE = 40
 
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, x, y, size=30, speed=3, max_hp=3):
+    def __init__(self, x, y, size=30, speed=3, max_hp=2):
         super().__init__()
         self.image = pygame.Surface((size, size))
         self.image.fill(ENEMY_COLOR)
@@ -157,7 +157,7 @@ class EMP_Tower(pygame.sprite.Sprite):
 def spawn_enemies(
         player, enemies, all_sprites,
         spawn_timer, current_time,
-        base_interval=600,          # 기본 스폰 주기 (tick 단위)
+        base_interval=300,          # 기본 스폰 주기 (tick 단위)
         base_num=5,                # 기본 스폰 수
         margin=600,                 # 플레이어 최소 거리
         spawn_radius=1200,          # 최대 거리
@@ -194,7 +194,7 @@ def spawn_enemies(
                         spawn_x, spawn_y,
                         size=enemy_size,
                         speed=enemy_speed,
-                        max_hp=3 + level_scale
+                        max_hp=1 + level_scale
                     )
 
                     if not pygame.sprite.spritecollideany(new_enemy, enemies):

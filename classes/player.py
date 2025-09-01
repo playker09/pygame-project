@@ -13,7 +13,7 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(MAP_WIDTH / 2, MAP_HEIGHT / 2))
 
         # 이동
-        self.speed = 3.5
+        self.speed = 3.2
 
         # 체력
         self.max_hp = 100
@@ -38,7 +38,7 @@ class Player(pygame.sprite.Sprite):
         self.is_dashing = False
         self.dash_vector = (0, 0)
         self.dash_speed = 25
-        self.dash_duration = 100
+        self.dash_duration = 70
         self.dash_start_time = 0
         self.dash_cooldown_time = 3000
         self.dash_cooldown = 0
