@@ -13,6 +13,7 @@ from classes.camera import Camera
 from scenes.map import draw_grid, MAP_WIDTH, MAP_HEIGHT
 from scenes.game_over import game_over_screen
 from hud import draw_level, draw_ammo, draw_dash_indicator
+from scenes.upgrade import show_upgrade_screen
 
 # 초기화
 pygame.init()
@@ -27,6 +28,7 @@ FPS = 60
 def main():
     # 모든 스프라이트 그룹
     player = Player()
+    player.choose_primary_weapon(WIN, WIDTH, HEIGHT)
     all_sprites = pygame.sprite.Group()
     enemies = pygame.sprite.Group()
     bullets = pygame.sprite.Group()
@@ -154,13 +156,14 @@ def main():
                 # 색상 복구 로직 (적과 충돌하지 않을 때)
                 # if current_time - last_hit_time > 100:  # 0.2초 동안 색상 유지
                 #     PLAYER_COLOR = (0, 200, 255)  # 원래 색상으로 복구
-
+                
         # 경험치 오브 흡수
         for orb in exp_orbs.copy():
             if player.rect.colliderect(orb.rect):
-                player.gain_exp(orb.value)  # 경험치 획득
+                level_up = player.gain_exp(orb.value)  # 경험치 획득
                 orb.kill()
-
+                if level_up:
+                    show_upgrade_screen(WIN, player, WIDTH, HEIGHT)
         # 격자 그리기
         draw_grid(WIN, camera)
 

@@ -3,7 +3,7 @@ from classes.bullet import Bullet
 
 class Weapon:
     def __init__(self, name, fire_rate, spread, mode="single", burst_count=3, pellet_count=5,
-                 mag_size=30, reserve_ammo=90, reload_time=1500):
+                 mag_size=30, reserve_ammo=float("inf"), reload_time=1500,damage=1):
         self.name = name
         self.fire_rate = fire_rate
         self.spread = spread
@@ -11,6 +11,7 @@ class Weapon:
         self.last_shot = 0
         self.burst_count = burst_count
         self.pellet_count = pellet_count
+        self.damage = damage
 
         # 🔫 탄약 관련
         self.mag_size = mag_size
@@ -49,15 +50,15 @@ class Weapon:
         dx, dy = dx / length, dy / length
 
         if self.mode == "single" or self.mode == "auto":
-            self.spawn_bullet(px, py, dx, dy, bullets)
+            self.spawn_bullet(px, py, dx, dy, bullets, damage=self.damage)
 
         elif self.mode == "burst":
             for _ in range(self.burst_count):
-                self.spawn_bullet(px, py, dx, dy, bullets)
+                self.spawn_bullet(px, py, dx, dy, bullets, damage=self.damage)
 
         elif self.mode == "shotgun":
             for _ in range(self.pellet_count):
-                self.spawn_bullet(px, py, dx, dy, bullets)
+                self.spawn_bullet(px, py, dx, dy, bullets, damage=self.damage)
 
     def reload(self, current_time):
         if self.is_reloading:
@@ -78,12 +79,15 @@ class Weapon:
             self.reserve_ammo -= to_load
             self.is_reloading = False
 
-    def spawn_bullet(self, px, py, dx, dy, bullets):
+    def spawn_bullet(self, px, py, dx, dy, bullets, damage=None):
+        if damage is None:
+            damage = self.damage
+
         spread_angle = math.radians(random.uniform(-self.spread, self.spread))
         cos_a, sin_a = math.cos(spread_angle), math.sin(spread_angle)
         sdx = dx * cos_a - dy * sin_a
         sdy = dx * sin_a + dy * cos_a
 
-        bullets.add(Bullet(px, py, sdx, sdy))
+        bullets.add(Bullet(px, py, sdx, sdy, damage=damage))
 
 
