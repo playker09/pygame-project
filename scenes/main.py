@@ -13,7 +13,7 @@ from classes.camera import Camera
 from scenes.map import draw_grid, MAP_WIDTH, MAP_HEIGHT
 from scenes.game_over import game_over_screen
 from hud import draw_level, draw_ammo, draw_dash_indicator
-from scenes.upgrade import show_upgrade_screen
+from scenes.upgrade import generate_upgrades, draw_upgrade_ui
 
 # 초기화
 pygame.init()
@@ -44,6 +44,10 @@ def main():
     camera = Camera(WIDTH, HEIGHT)  # 카메라 초기화
     last_hit_time = 0  # 마지막으로 플레이어가 적에게 맞은 시간
     shooting = False
+    ui_open = False
+    upgrade_choices = []
+    btn_rects = []  
+    upgrade_ui = None
 
     while True:
         dt = clock.tick(FPS) / 1000.0
@@ -57,6 +61,22 @@ def main():
                 pygame.quit()
                 sys.exit()
 
+            if ui_open and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                mx, my = pygame.mouse.get_pos()
+                for i, rect in enumerate(btn_rects):
+                    if rect.collidepoint((mx, my)):
+                        # 선택 적용
+                        upgrade_choices[i]["effect"](player)
+                        name = upgrade_choices[i]["name"]
+                        # 플레이어 업그레이드 기록
+                        if upgrade_choices[i] in player.upgrades.get("weapon", []) or upgrade_choices[i] in player.upgrades.get("weapon", []):
+                            player.upgrades["weapon"].append(name)
+                        elif upgrade_choices[i] in player.upgrades.get("secondary", []):
+                            player.upgrades["secondary"].append(name)
+                        elif upgrade_choices[i] in player.upgrades.get("accessory", []):
+                            player.upgrades["accessory"].append(name)
+                        ui_open = False  # UI 닫기
+            
             # 무기 교체
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1:
@@ -87,84 +107,87 @@ def main():
             if event.type == pygame.MOUSEBUTTONUP:
                 if event.button == 1:
                     shooting = False
-            
-        if shooting:
-            mx, my = pygame.mouse.get_pos()
-            player.shoot(mx, my, camera, bullets, current_time)
-        bullets.update()
         
-        player.update_weapon(current_time)
+        if not ui_open:
+            if shooting:
+                mx, my = pygame.mouse.get_pos()
+                player.shoot(mx, my, camera, bullets, current_time)
+            bullets.update()
             
-        # 플레이어 이동
-        keys = pygame.key.get_pressed()
-        dash_dir = [0, 0]
+            player.update_weapon(current_time)
+                
+            # 플레이어 이동
+            keys = pygame.key.get_pressed()
+            dash_dir = [0, 0]
 
-        # 이동 방향 벡터 생성
-        if keys[pygame.K_w]: dash_dir[1] -= 1
-        if keys[pygame.K_s]: dash_dir[1] += 1
-        if keys[pygame.K_a]: dash_dir[0] -= 1
-        if keys[pygame.K_d]: dash_dir[0] += 1
+            # 이동 방향 벡터 생성
+            if keys[pygame.K_w]: dash_dir[1] -= 1
+            if keys[pygame.K_s]: dash_dir[1] += 1
+            if keys[pygame.K_a]: dash_dir[0] -= 1
+            if keys[pygame.K_d]: dash_dir[0] += 1
 
-        # 대쉬 시작 (방향이 있을 때만)
-        if dash_dir != [0, 0] and keys[pygame.K_LSHIFT]:
-            player.dash(tuple(dash_dir), current_time)
+            # 대쉬 시작 (방향이 있을 때만)
+            if dash_dir != [0, 0] and keys[pygame.K_LSHIFT]:
+                player.dash(tuple(dash_dir), current_time)
 
-        # 이동 처리
-        player.move(keys)
+            # 이동 처리
+            player.move(keys)
 
-        # 플레이어 상태 업데이트 (대쉬, 무적, 무기)
-        player.update(current_time)
+            # 플레이어 상태 업데이트 (대쉬, 무적, 무기)
+            player.update(current_time)
 
-        # 카메라 업데이트
-        camera.update(player)
+            # 카메라 업데이트
+            camera.update(player)
 
-       # EMP 타워 업데이트
-        for tower in towers:
-            tower.update(dt, player, enemies, all_sprites, exp_orbs, current_time)
+        # EMP 타워 업데이트
+            for tower in towers:
+                tower.update(dt, player, enemies, all_sprites, exp_orbs, current_time)
+                
+            spawn_timer = spawn_enemies(player, enemies, all_sprites, spawn_timer, current_time)
+
+            # 총알 이동 및 제거
+            for bullet in bullets.copy():
+                hit_enemies = pygame.sprite.spritecollide(bullet, enemies, False)
+                for enemy in hit_enemies:
+                    enemy.hp -= bullet.damage
+                    bullet.kill()
+                    if enemy.hp <= 0:
+                        exp_orb = ExpOrb(enemy.rect.centerx, enemy.rect.centery, random.randint(4, 7))
+                        exp_orbs.add(exp_orb)
+                        all_sprites.add(exp_orb)
+                        enemy.kill()
             
-        spawn_timer = spawn_enemies(player, enemies, all_sprites, spawn_timer, current_time)
+            hit_enemies = pygame.sprite.spritecollide(player, enemies, False)
+            if hit_enemies and current_time - last_hit_time > 1000:
+                player.hp -= 10
+                last_hit_time = current_time
+                if player.hp <= 0:
+                    action = game_over_screen(WIN, player.level, WIDTH, HEIGHT)
+                    if action == "retry":
+                        main()
+                    else:
+                        pygame.quit()
+                        sys.exit()
 
-        # 총알 이동 및 제거
-        for bullet in bullets.copy():
-            hit_enemies = pygame.sprite.spritecollide(bullet, enemies, False)
-            for enemy in hit_enemies:
-                enemy.hp -= bullet.damage
-                bullet.kill()
-                if enemy.hp <= 0:
-                    exp_orb = ExpOrb(enemy.rect.centerx, enemy.rect.centery, random.randint(4, 7))
-                    exp_orbs.add(exp_orb)
-                    all_sprites.add(exp_orb)
-                    enemy.kill()
-        
-        hit_enemies = pygame.sprite.spritecollide(player, enemies, False)
-        if hit_enemies and current_time - last_hit_time > 1000:
-            player.hp -= 10
-            last_hit_time = current_time
-            if player.hp <= 0:
-                action = game_over_screen(WIN, player.level, WIDTH, HEIGHT)
-                if action == "retry":
-                    main()
-                else:
-                    pygame.quit()
-                    sys.exit()
-
-        # 적 이동
-        for enemy in enemies:
-            enemy.move(player.rect, enemies)
-
+            # 적 이동
+            for enemy in enemies:
+                enemy.move(player.rect, enemies)
+            pass
             # else:
                 # 색상 복구 로직 (적과 충돌하지 않을 때)
                 # if current_time - last_hit_time > 100:  # 0.2초 동안 색상 유지
                 #     PLAYER_COLOR = (0, 200, 255)  # 원래 색상으로 복구
-                
+
         # 경험치 오브 흡수
         for orb in exp_orbs.copy():
             if player.rect.colliderect(orb.rect):
                 level_up = player.gain_exp(orb.value)  # 경험치 획득
                 orb.kill()
                 if level_up:
-                    show_upgrade_screen(WIN, player, WIDTH, HEIGHT)
-        # 격자 그리기
+                    ui_open = True
+                    upgrade_choices = generate_upgrades(player)
+                    btn_rects = draw_upgrade_ui(WIN, player, upgrade_choices)
+        
         draw_grid(WIN, camera)
 
         for sprite in all_sprites:
@@ -183,6 +206,9 @@ def main():
         draw_level(WIN, font, player)
         draw_ammo(WIN, font, player)
         draw_dash_indicator(WIN, font, player)
+
+        if ui_open:
+            btn_rects = draw_upgrade_ui(WIN, player, upgrade_choices)
 
         pygame.display.update()
 

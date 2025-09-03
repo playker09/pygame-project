@@ -1,7 +1,7 @@
 import pygame
 from scenes.map import MAP_WIDTH, MAP_HEIGHT
 from classes.weapon import Weapon
-from scenes.upgrade import show_upgrade_screen
+# from scenes.upgrade import show_upgrade_screen
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
