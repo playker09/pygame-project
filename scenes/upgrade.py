@@ -3,12 +3,33 @@ import random
 
 # --- 공용 업그레이드 ---
 COMMON_UPGRADES = [
-    {"name": "공격 속도 증가", "effect": lambda player: setattr(player.current_weapon, "fire_rate", max(50, player.current_weapon.fire_rate - 10))},
-    {"name": "재장전 속도 증가", "effect": lambda player: setattr(player.current_weapon, "reload_time", max(200, getattr(player.current_weapon, "reload_time", 1000) - 100))},
-    {"name": "탄창 크기 증가", "effect": lambda player: setattr(player.current_weapon, "mag_size", player.current_weapon.mag_size + 3)},
-    {"name": "이동 속도 증가", "effect": lambda player: setattr(player, "speed", player.speed + 0.2)},
-    {"name": "체력 증가", "effect": lambda player: setattr(player, "max_hp", player.max_hp + 20)},
+    {
+        "name": "공격 속도 증가",
+        "desc": "무기 발사 속도가 빨라집니다.",
+        "effect": lambda player: setattr(player.current_weapon, "fire_rate", max(50, player.current_weapon.fire_rate - 10))
+    },
+    {
+        "name": "재장전 속도 증가",
+        "desc": "재장전 시간이 줄어듭니다.",
+        "effect": lambda player: setattr(player.current_weapon, "reload_time", max(200, getattr(player.current_weapon, "reload_time", 1000) - 100))
+    },
+    {
+        "name": "탄창 크기 증가",
+        "desc": "한 번에 장전되는 탄약 수가 늘어납니다.",
+        "effect": lambda player: setattr(player.current_weapon, "mag_size", player.current_weapon.mag_size + 3)
+    },
+    {
+        "name": "이동 속도 증가",
+        "desc": "이동 속도가 조금 증가합니다.",
+        "effect": lambda player: setattr(player, "speed", player.speed + 0.2)
+    },
+    {
+        "name": "체력 증가",
+        "desc": "최대 체력이 증가합니다.",
+        "effect": lambda player: setattr(player, "max_hp", player.max_hp + 20)
+    },
 ]
+
 
 # --- 무기별 전용 업그레이드 ---
 WEAPON_SPECIFIC = {
@@ -59,7 +80,9 @@ def generate_upgrades(player):
 # --- UI 그리기 (게임 루프 안에서 호출) ---
 def draw_upgrade_ui(surface, player, choices):
     font = pygame.font.SysFont("malgungothic", 24)
-    ui_width, ui_height = 400, 300
+    small_font = pygame.font.SysFont("malgungothic", 18)  # 설명용 작은 글씨
+
+    ui_width, ui_height = 500, 400
     overlay = pygame.Surface((ui_width, ui_height))
     overlay.fill((50, 50, 50))
     overlay.set_alpha(230)
@@ -68,10 +91,19 @@ def draw_upgrade_ui(surface, player, choices):
 
     btn_rects = []
     for i, up in enumerate(choices):
-        btn_rect = pygame.Rect(rect.x + 50, rect.y + 40 + i*80, ui_width-100, 60)
+        btn_rect = pygame.Rect(rect.x + 50, rect.y + 40 + i*100, ui_width-100, 80)
         btn_rects.append(btn_rect)
+
+        # 버튼 배경
         pygame.draw.rect(surface, (100, 100, 100), btn_rect, border_radius=10)
         pygame.draw.rect(surface, (200, 200, 200), btn_rect, 2, border_radius=10)
+
+        # 이름
         text = font.render(up["name"], True, (255, 255, 255))
-        surface.blit(text, (btn_rect.x + 10, btn_rect.y + 15))
+        surface.blit(text, (btn_rect.x + 10, btn_rect.y + 10))
+
+        # 설명
+        desc = small_font.render(up.get("desc", ""), True, (200, 200, 200))
+        surface.blit(desc, (btn_rect.x + 10, btn_rect.y + 45))
+
     return btn_rects

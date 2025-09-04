@@ -14,6 +14,7 @@ from scenes.map import draw_grid, MAP_WIDTH, MAP_HEIGHT
 from scenes.game_over import game_over_screen
 from hud import draw_level, draw_ammo, draw_dash_indicator
 from scenes.upgrade import generate_upgrades, draw_upgrade_ui
+from scenes.lobby import lobby_screen   
 
 # 초기화
 pygame.init()
@@ -26,9 +27,15 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def main():
+    global game_state # play, upgrade, game_over, prepare, menu
+    lobby_screen(WIN, WIDTH, HEIGHT)
+    game_state = "prepare"
+
     # 모든 스프라이트 그룹
     player = Player()
     player.choose_primary_weapon(WIN, WIDTH, HEIGHT)
+    game_state = "play"
+    
     all_sprites = pygame.sprite.Group()
     enemies = pygame.sprite.Group()
     bullets = pygame.sprite.Group()
@@ -44,7 +51,6 @@ def main():
     camera = Camera(WIDTH, HEIGHT)  # 카메라 초기화
     last_hit_time = 0  # 마지막으로 플레이어가 적에게 맞은 시간
     shooting = False
-    ui_open = False
     upgrade_choices = []
     btn_rects = []  
     upgrade_ui = None
@@ -52,7 +58,6 @@ def main():
     while True:
         dt = clock.tick(FPS) / 1000.0
         WIN.fill((0,0,0))
-
         current_time = pygame.time.get_ticks()
 
         # 이벤트 처리
@@ -61,7 +66,7 @@ def main():
                 pygame.quit()
                 sys.exit()
 
-            if ui_open and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if game_state == "upgrade" and event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 mx, my = pygame.mouse.get_pos()
                 for i, rect in enumerate(btn_rects):
                     if rect.collidepoint((mx, my)):
@@ -75,19 +80,10 @@ def main():
                             player.upgrades["secondary"].append(name)
                         elif upgrade_choices[i] in player.upgrades.get("accessory", []):
                             player.upgrades["accessory"].append(name)
-                        ui_open = False  # UI 닫기
-            
+                        game_state = "play"  # UI 닫기
+
             # 무기 교체
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_1:
-                    player.switch_weapon("pistol")
-                if event.key == pygame.K_2:
-                    player.switch_weapon("smg")
-                if event.key == pygame.K_3:
-                    player.switch_weapon("burst_rifle")
-                if event.key == pygame.K_4:
-                    player.switch_weapon("shotgun")
-                
                 if event.key == pygame.K_r:
                     player.reload(current_time)
 
@@ -108,7 +104,7 @@ def main():
                 if event.button == 1:
                     shooting = False
         
-        if not ui_open:
+        if game_state == "play":
             if shooting:
                 mx, my = pygame.mouse.get_pos()
                 player.shoot(mx, my, camera, bullets, current_time)
@@ -132,10 +128,8 @@ def main():
 
             # 이동 처리
             player.move(keys)
-
             # 플레이어 상태 업데이트 (대쉬, 무적, 무기)
             player.update(current_time)
-
             # 카메라 업데이트
             camera.update(player)
 
@@ -162,8 +156,10 @@ def main():
                 player.hp -= 10
                 last_hit_time = current_time
                 if player.hp <= 0:
+                    game_state = "game_over"
                     action = game_over_screen(WIN, player.level, WIDTH, HEIGHT)
                     if action == "retry":
+
                         main()
                     else:
                         pygame.quit()
@@ -184,7 +180,7 @@ def main():
                 level_up = player.gain_exp(orb.value)  # 경험치 획득
                 orb.kill()
                 if level_up:
-                    ui_open = True
+                    game_state = "upgrade"
                     upgrade_choices = generate_upgrades(player)
                     btn_rects = draw_upgrade_ui(WIN, player, upgrade_choices)
         
@@ -207,7 +203,7 @@ def main():
         draw_ammo(WIN, font, player)
         draw_dash_indicator(WIN, font, player)
 
-        if ui_open:
+        if game_state == "upgrade":
             btn_rects = draw_upgrade_ui(WIN, player, upgrade_choices)
 
         pygame.display.update()
