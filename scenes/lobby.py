@@ -8,10 +8,10 @@ def lobby_screen(surface, WIDTH, HEIGHT):
     button_font = pygame.font.SysFont("arial", 40)
 
     while True:
-        surface.fill((30, 30, 60))  # 배경 색
+        surface.fill((0,0,0))  # 배경 색
 
         # 제목
-        title_surface = title_font.render("My Game", True, (255, 255, 255))
+        title_surface = title_font.render("AREA-X", True, (255, 255, 255))
         surface.blit(title_surface, (WIDTH//2 - title_surface.get_width()//2, HEIGHT//4))
 
         # 버튼 그리기

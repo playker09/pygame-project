@@ -13,7 +13,7 @@ class Weapon:
         self.pellet_count = pellet_count
         self.damage = damage
 
-        # 🔫 탄약 관련
+        # 탄약 관련
         self.mag_size = mag_size
         self.ammo_in_mag = mag_size
         self.reserve_ammo = reserve_ammo
@@ -37,7 +37,7 @@ class Weapon:
             return
 
         self.last_shot = current_time
-        self.ammo_in_mag -= 1  # 🔥 탄약 소모
+        self.ammo_in_mag -= 1 
 
         # 카메라 오프셋 적용
         mx += camera.offset_x

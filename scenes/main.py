@@ -27,7 +27,7 @@ clock = pygame.time.Clock()
 FPS = 60
 
 def main():
-    global game_state # play, upgrade, game_over, prepare, menu
+    global game_state # play, upgrade, game_over, prepare, lobby
     lobby_screen(WIN, WIDTH, HEIGHT)
     game_state = "prepare"
 
@@ -73,7 +73,7 @@ def main():
                         # 선택 적용
                         upgrade_choices[i]["effect"](player)
                         name = upgrade_choices[i]["name"]
-                        # 플레이어 업그레이드 기록
+                        # 플레이어 업그레이드 인벤토리
                         if upgrade_choices[i] in player.upgrades.get("weapon", []) or upgrade_choices[i] in player.upgrades.get("weapon", []):
                             player.upgrades["weapon"].append(name)
                         elif upgrade_choices[i] in player.upgrades.get("secondary", []):
@@ -82,7 +82,7 @@ def main():
                             player.upgrades["accessory"].append(name)
                         game_state = "play"  # UI 닫기
 
-            # 무기 교체
+            # 장전
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
                     player.reload(current_time)
@@ -133,7 +133,7 @@ def main():
             # 카메라 업데이트
             camera.update(player)
 
-        # EMP 타워 업데이트
+            # EMP 타워 업데이트
             for tower in towers:
                 tower.update(dt, player, enemies, all_sprites, exp_orbs, current_time)
                 
@@ -152,19 +152,19 @@ def main():
                         enemy.kill()
             
             hit_enemies = pygame.sprite.spritecollide(player, enemies, False)
-            if hit_enemies and current_time - last_hit_time > 1000:
-                player.hp -= 10
-                last_hit_time = current_time
-                if player.hp <= 0:
-                    game_state = "game_over"
-                    action = game_over_screen(WIN, player.level, WIDTH, HEIGHT)
-                    if action == "retry":
+            current_time = pygame.time.get_ticks()
+            for enemy in hit_enemies:
+                if enemy.can_attack(current_time):
+                    enemy.deal_damage(player, current_time)
 
-                        main()
-                    else:
-                        pygame.quit()
-                        sys.exit()
-
+                    if player.hp <= 0:
+                        game_state = "game_over"
+                        action = game_over_screen(WIN, player.level, WIDTH, HEIGHT)
+                        if action == "retry":
+                            main()
+                        else:
+                            pygame.quit()
+                            sys.exit()
             # 적 이동
             for enemy in enemies:
                 enemy.move(player.rect, enemies)

@@ -12,7 +12,7 @@ WALL_SIZE = 40
 
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, x, y, size=30, speed=3, max_hp=2):
+    def __init__(self, x, y, size=30, speed=3, max_hp=2, damage=3, damage_cooldown=1000):
         super().__init__()
         self.image = pygame.Surface((size, size))
         self.image.fill(ENEMY_COLOR)
@@ -20,6 +20,9 @@ class Enemy(pygame.sprite.Sprite):
         self.speed = speed
         self.max_hp = max_hp
         self.hp = max_hp
+        self.damage = damage
+        self.damage_cooldown = damage_cooldown  # ms
+        self.last_hit_time = 0  # 플레이어를 마지막으로 공격한 시간
 
     def move(self, player_rect, enemies):
         dx = player_rect.centerx - self.rect.centerx
@@ -42,6 +45,13 @@ class Enemy(pygame.sprite.Sprite):
                     self.rect.y -= self.speed
                 elif self.rect.y > enemy.rect.y:
                     self.rect.y += self.speed
+
+    def can_attack(self, current_time):
+        return current_time - self.last_hit_time >= self.damage_cooldown
+    def deal_damage(self, player, current_time):
+        """플레이어에게 피해를 주고 마지막 공격 시간 업데이트"""
+        player.hp -= self.damage
+        self.last_hit_time = current_time
 
     def draw(self, surface, camera):
         surface.blit(self.image, camera.apply(self.rect))
