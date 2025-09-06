@@ -3,7 +3,7 @@ from classes.bullet import Bullet
 
 class Weapon:
     def __init__(self, name, fire_rate, spread, mode="single", burst_count=3, pellet_count=5,
-                 mag_size=30, reserve_ammo=float("inf"), reload_time=1500,damage=1):
+                 mag_size=30, reserve_ammo=float("inf"), reload_time=1500, damage=1, pierce_level=0):
         self.name = name
         self.fire_rate = fire_rate
         self.spread = spread
@@ -12,6 +12,7 @@ class Weapon:
         self.burst_count = burst_count
         self.pellet_count = pellet_count
         self.damage = damage
+        self.pierce_level = pierce_level
 
         # 탄약 관련
         self.mag_size = mag_size
@@ -88,6 +89,6 @@ class Weapon:
         sdx = dx * cos_a - dy * sin_a
         sdy = dx * sin_a + dy * cos_a
 
-        bullets.add(Bullet(px, py, sdx, sdy, damage=damage))
+        bullets.add(Bullet(px, py, sdx, sdy, damage=damage, max_pierce=self.pierce_level))
 
 

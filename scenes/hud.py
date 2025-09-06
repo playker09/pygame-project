@@ -16,3 +16,7 @@ def draw_dash_indicator(surface, font, player):
     if player.dash_cooldown <= 0:
         text = font.render("DASH READY", True, (0, 255, 0))
         surface.blit(text, (10, 570))
+    else: 
+        text = font.render(f"{player.dash_cooldown/1000+1:.1f}", True, (2, 255, 0))
+        surface.blit(text, (10, 570))
+

@@ -7,7 +7,7 @@ BULLET_WIDTH = 30
 BULLET_HEIGHT = 4
 
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self, x, y, dx, dy, width=BULLET_WIDTH, height=BULLET_HEIGHT, speed=30, damage=1):
+    def __init__(self, x, y, dx, dy, width=BULLET_WIDTH, height=BULLET_HEIGHT, speed=30, damage=1, max_pierce=0):
         super().__init__()
         self.image = pygame.Surface((width, height), pygame.SRCALPHA)
         pygame.draw.ellipse(self.image, BULLET_COLOR, (0, 0, width, height))
@@ -20,6 +20,8 @@ class Bullet(pygame.sprite.Sprite):
         self.original_image = self.image
         self.image = pygame.transform.rotate(self.original_image, self.angle)
         self.rect = self.image.get_rect(center=self.rect.center)
+        self.pierce_count = 0  # 관통 횟수 (0이면 관통 없음)
+        self.max_pierce = max_pierce   # 최대 관통 수
 
     def update(self):
         self.rect.x += self.dx * self.speed

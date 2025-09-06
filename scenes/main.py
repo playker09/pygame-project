@@ -13,7 +13,7 @@ from classes.camera import Camera
 from scenes.map import draw_grid, MAP_WIDTH, MAP_HEIGHT
 from scenes.game_over import game_over_screen
 from hud import draw_level, draw_ammo, draw_dash_indicator
-from scenes.upgrade import generate_upgrades, draw_upgrade_ui
+from classes.upgrade import generate_upgrades, draw_upgrade_ui, COMMON_UPGRADES, WEAPON_SPECIFIC, SECONDARIES, ACCESSORIES
 from scenes.lobby import lobby_screen   
 
 # 초기화
@@ -70,17 +70,15 @@ def main():
                 mx, my = pygame.mouse.get_pos()
                 for i, rect in enumerate(btn_rects):
                     if rect.collidepoint((mx, my)):
-                        # 선택 적용
-                        upgrade_choices[i]["effect"](player)
-                        name = upgrade_choices[i]["name"]
-                        # 플레이어 업그레이드 인벤토리
-                        if upgrade_choices[i] in player.upgrades.get("weapon", []) or upgrade_choices[i] in player.upgrades.get("weapon", []):
-                            player.upgrades["weapon"].append(name)
-                        elif upgrade_choices[i] in player.upgrades.get("secondary", []):
-                            player.upgrades["secondary"].append(name)
-                        elif upgrade_choices[i] in player.upgrades.get("accessory", []):
-                            player.upgrades["accessory"].append(name)
-                        game_state = "play"  # UI 닫기
+                        chosen_upgrade = upgrade_choices[i]
+                        chosen_upgrade.apply(player)  # ← 클래스 버전은 여기서 자동 레벨 + 추가효과 적용
+                        # 플레이어 업그레이드 리스트에 등록
+                        category = "weapon" if chosen_upgrade in COMMON_UPGRADES + WEAPON_SPECIFIC.get(player.primary_weapon.name, []) else \
+                                "secondary" if chosen_upgrade in SECONDARIES else "accessory"
+                        if chosen_upgrade not in player.upgrades[category]:
+                            player.upgrades[category].append(chosen_upgrade)
+                        game_state = "play"
+
 
             # 장전
             if event.type == pygame.KEYDOWN:
@@ -144,12 +142,16 @@ def main():
                 hit_enemies = pygame.sprite.spritecollide(bullet, enemies, False)
                 for enemy in hit_enemies:
                     enemy.hp -= bullet.damage
-                    bullet.kill()
+                    bullet.pierce_count += 1
+                    
                     if enemy.hp <= 0:
                         exp_orb = ExpOrb(enemy.rect.centerx, enemy.rect.centery, random.randint(4, 7))
                         exp_orbs.add(exp_orb)
                         all_sprites.add(exp_orb)
                         enemy.kill()
+                    if bullet.pierce_count > bullet.max_pierce:
+                        bullet.kill()
+                        break  # 이미 최대 관통
             
             hit_enemies = pygame.sprite.spritecollide(player, enemies, False)
             current_time = pygame.time.get_ticks()

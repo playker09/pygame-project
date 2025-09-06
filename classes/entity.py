@@ -97,7 +97,7 @@ class EMP_Tower(pygame.sprite.Sprite):
         self.active = False      # 플레이어가 활성화 시켰는지 여부
         self.survive_time = survive_time  # 버텨야 하는 시간(초)
         self.timer = 0           # 남은 시간
-        self.font = pygame.font.SysFont(None, 24)
+        self.font = pygame.font.SysFont(None, 32)
 
         # 타워마다 개별 스폰 타이머 관리
         self.spawn_timer = 0  

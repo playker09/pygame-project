@@ -25,19 +25,19 @@ class Player(pygame.sprite.Sprite):
 
         # 주무기 & 무기 선택
         self.weapons = {
-            "pistol": Weapon("Pistol", fire_rate=130, spread=2, mode="single", mag_size=12, reserve_ammo=float("inf")),
-            "smg": Weapon("SMG", fire_rate=100, spread=5, mode="auto"),
-            "burst_rifle": Weapon("Burst Rifle", fire_rate=500, spread=3, mode="burst", burst_count=3),
-            "shotgun": Weapon("Shotgun", fire_rate=700, spread=15, mode="shotgun", pellet_count=10)
+            "dmr": Weapon("DMR", fire_rate=130, spread=1, mode="single", mag_size=25, reload_time=900, damage=3.5),
+            "smg": Weapon("SMG", fire_rate=100, spread=5, mode="auto", reload_time=1200),
+            "rifle": Weapon("Rifle", fire_rate=200, spread=3, mode="auto", reload_time= 1600, damage=2.5),
+            "shotgun": Weapon("Shotgun", fire_rate=700, spread=15, mode="shotgun", pellet_count=10,damage=1.5)
         }
         self.primary_weapon = None
         self.current_weapon = None
 
         # 업그레이드 관리
         self.upgrades = {
-            "weapon": [],      # 주무기 업그레이드
-            "secondary": [],   # 보조 무기
-            "accessory": []    # 악세사리
+            "weapon": [],      # Upgrade 객체 리스트
+            "secondary": [],
+            "accessory": []
         }
         self.max_weapon_upgrades = 3
         self.max_secondary_upgrades = 3
