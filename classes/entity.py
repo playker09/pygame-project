@@ -12,7 +12,7 @@ WALL_SIZE = 40
 
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, x, y, size=30, speed=3, max_hp=2, damage=3, damage_cooldown=1000):
+    def __init__(self, x, y, size=30, speed=2.5, max_hp=2, damage=5, damage_cooldown=900):
         super().__init__()
         self.image = pygame.Surface((size, size))
         self.image.fill(ENEMY_COLOR)
@@ -63,6 +63,16 @@ class Enemy(pygame.sprite.Sprite):
         hp_ratio = self.hp / self.max_hp
         pygame.draw.rect(surface, (255, 0, 0), (bar_x, bar_y, bar_width, bar_height))
         pygame.draw.rect(surface, (0, 255, 0),(bar_x, bar_y, bar_width * hp_ratio, bar_height))
+
+class FastEnemy(Enemy):
+    def __init__(self, x, y):
+        super().__init__(x, y, max_hp=2, speed=3.2, damage=3, damage_cooldown=500)
+        self.image.fill((255, 165, 0))  # 주황색
+
+class TankEnemy(Enemy):
+    def __init__(self, x, y):
+        super().__init__(x, y, max_hp=10, speed=2, damage=7, damage_cooldown=1500, size=45)
+        self.image.fill((128, 0, 128))  # 보라색
 
 class Wall(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -167,7 +177,7 @@ class EMP_Tower(pygame.sprite.Sprite):
 def spawn_enemies(
         player, enemies, all_sprites,
         spawn_timer, current_time,
-        base_interval=300,          # 기본 스폰 주기 (tick 단위)
+        base_interval=180,          # 기본 스폰 주기 (tick 단위)
         base_num=5,                # 기본 스폰 수
         margin=600,                 # 플레이어 최소 거리
         spawn_radius=1200,          # 최대 거리
@@ -200,12 +210,17 @@ def spawn_enemies(
                     spawn_y = max(0, min(MAP_HEIGHT - enemy_size, spawn_y))
 
                     # 새 적 생성
-                    new_enemy = Enemy(
-                        spawn_x, spawn_y,
-                        size=enemy_size,
-                        speed=enemy_speed,
-                        max_hp=1 + level_scale
-                    )
+                    enemy_class = random.choices(
+                        [Enemy, FastEnemy, TankEnemy],
+                        weights=[0.7, 0.29, 0.01],  # 등장 확률 조정
+                        k=1
+                    )[0]
+
+                    new_enemy = enemy_class(spawn_x, spawn_y)
+
+                    # HP 스케일 적용 (기존 level_scale)
+                    new_enemy.max_hp += int(level_scale)
+                    new_enemy.hp = new_enemy.max_hp
 
                     if not pygame.sprite.spritecollideany(new_enemy, enemies):
                         enemies.add(new_enemy)

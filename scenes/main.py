@@ -26,6 +26,29 @@ pygame.display.set_caption("슈팅게임 프로토타입")
 clock = pygame.time.Clock()
 FPS = 60
 
+pygame.mixer.init()
+game_state = "lobby"  # play, upgrade, game_over, prepare, lobby
+ingame_bgm = pygame.mixer.Sound("assets//sfx//bgm1.wav")
+ingame_bgm.set_volume(0.3)
+
+current_music_state = None  # 지금 어떤 상태에서 음악이 재생되고 있는지 기록
+
+def update_music(game_state):
+    global current_music_state
+
+    if game_state in ["play", "upgrade"]:
+        if current_music_state != "ingame_bgm":
+            pygame.mixer.music.stop()
+            ingame_bgm.play(-1)  # 무한 반복
+            current_music_state = "ingame_bgm"
+    else:
+        if current_music_state is not None:
+            pygame.mixer.music.stop()
+            current_music_state = None
+
+
+# hit_sfx = pygame.mixer.Sound("assets/sfx/hit.wav")
+
 def main():
     global game_state # play, upgrade, game_over, prepare, lobby
     lobby_screen(WIN, WIDTH, HEIGHT)
@@ -56,6 +79,7 @@ def main():
     upgrade_ui = None
 
     while True:
+        update_music(game_state)
         dt = clock.tick(FPS) / 1000.0
         WIN.fill((0,0,0))
         current_time = pygame.time.get_ticks()
@@ -78,6 +102,7 @@ def main():
                         if chosen_upgrade not in player.upgrades[category]:
                             player.upgrades[category].append(chosen_upgrade)
                         game_state = "play"
+                        pygame.mixer.Sound("assets//sfx//click.mp3").play()
 
 
             # 장전
@@ -181,8 +206,10 @@ def main():
             if player.rect.colliderect(orb.rect):
                 level_up = player.gain_exp(orb.value)  # 경험치 획득
                 orb.kill()
+                pygame.mixer.Sound("assets//sfx//exp2.mp3").play()
                 if level_up:
                     game_state = "upgrade"
+                    pygame.mixer.Sound("assets//sfx//level_up.mp3").play()
                     upgrade_choices = generate_upgrades(player)
                     btn_rects = draw_upgrade_ui(WIN, player, upgrade_choices)
         

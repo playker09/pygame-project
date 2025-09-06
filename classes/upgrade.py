@@ -144,7 +144,7 @@ def draw_upgrade_ui(surface, player, choices):
     font = pygame.font.SysFont("malgungothic", 24)
     small_font = pygame.font.SysFont("malgungothic", 18)
 
-    ui_width, ui_height = 500, 400
+    ui_width, ui_height = 500, 360
     overlay = pygame.Surface((ui_width, ui_height))
     overlay.fill((50, 50, 50))
     overlay.set_alpha(230)

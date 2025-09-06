@@ -1,5 +1,8 @@
 import math, random
+import pygame
 from classes.bullet import Bullet
+
+pygame.mixer.init()
 
 class Weapon:
     def __init__(self, name, fire_rate, spread, mode="single", burst_count=3, pellet_count=5,
@@ -21,6 +24,7 @@ class Weapon:
         self.reload_time = reload_time  # ms
         self.is_reloading = False
         self.reload_start_time = 0
+        self.reload_channel = pygame.mixer.Channel(1)
 
     def shoot(self, px, py, mx, my, camera, bullets, current_time):
         # 탄창 비었으면 발사 불가
@@ -33,6 +37,8 @@ class Weapon:
         if self.is_reloading:
             self.is_reloading = False
             self.reload_start_time = 0
+            if hasattr(self, "reload_channel"):
+                self.reload_channel.stop()  # 재장전 소리 끊기
 
         if current_time - self.last_shot < self.fire_rate:
             return
@@ -70,6 +76,13 @@ class Weapon:
         self.is_reloading = True
         self.reload_start_time = current_time
 
+        reload_sfx = pygame.mixer.Sound("assets//sfx//smg_reload.wav")
+        reload_sfx.set_volume(0.3)
+
+        # 채널에 올려서 재생 → 나중에 끊을 수 있음
+        self.reload_channel.play(reload_sfx)
+        
+
     def update(self, current_time):
         # 장전 중이면 장전 시간 체크
         if self.is_reloading and current_time - self.reload_start_time >= self.reload_time:
@@ -79,7 +92,7 @@ class Weapon:
             self.ammo_in_mag += to_load
             self.reserve_ammo -= to_load
             self.is_reloading = False
-
+            
     def spawn_bullet(self, px, py, dx, dy, bullets, damage=None):
         if damage is None:
             damage = self.damage
@@ -90,5 +103,6 @@ class Weapon:
         sdy = dx * sin_a + dy * cos_a
 
         bullets.add(Bullet(px, py, sdx, sdy, damage=damage, max_pierce=self.pierce_level))
-
-
+        shoot_sfx = pygame.mixer.Sound("assets//sfx//smg_shoot.wav")
+        shoot_sfx.set_volume(0.2)
+        shoot_sfx.play(maxtime=700)

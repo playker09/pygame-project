@@ -6,7 +6,7 @@ from classes.weapon import Weapon
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.original_image = pygame.image.load("image//player.png").convert_alpha()
+        self.original_image = pygame.image.load("assets//image//player.png").convert_alpha()
         self.original_image = pygame.transform.scale(self.original_image, (34, 66))
         self.image = self.original_image.copy()
         self.rect = self.image.get_rect(center=(MAP_WIDTH/2, MAP_HEIGHT/2))
@@ -26,8 +26,8 @@ class Player(pygame.sprite.Sprite):
         # 주무기 & 무기 선택
         self.weapons = {
             "dmr": Weapon("DMR", fire_rate=130, spread=1, mode="single", mag_size=25, reload_time=900, damage=3.5),
-            "smg": Weapon("SMG", fire_rate=100, spread=5, mode="auto", reload_time=1200),
-            "rifle": Weapon("Rifle", fire_rate=200, spread=3, mode="auto", reload_time= 1600, damage=2.5),
+            "smg": Weapon("SMG", fire_rate=90, spread=5, mode="auto", reload_time=1200),
+            "rifle": Weapon("Rifle", fire_rate=120, spread=3, mode="auto", reload_time= 1600, damage=2.5),
             "shotgun": Weapon("Shotgun", fire_rate=700, spread=15, mode="shotgun", pellet_count=10,damage=1.5)
         }
         self.primary_weapon = None
